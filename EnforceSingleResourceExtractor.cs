@@ -25,20 +25,20 @@
  * Multi-line comments -- Just like this comment block!
  */
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("EnforceSingleResourceExtractor", "ThibmoRozier", "1.0.1")]
+    [Info("EnforceSingleResourceExtractor", "ThibmoRozier", "1.0.2")]
     [Description("Enforce players only being able to use a single quarry and/or pump jack.")]
     public class EnforceSingleResourceExtractor : RustPlugin
     {
         #region Types
         private enum ExtractorType
         {
-            Invalid,
             PumpJack,
             Quarry
         }
@@ -48,13 +48,6 @@ namespace Oxide.Plugins
             public ulong PlayerId;
             public uint ExtractorId;
             public ExtractorType Type;
-
-            public QuarryState(ulong aPlayerId, uint aExtractorId, ExtractorType aType)
-            {
-                PlayerId = aPlayerId;
-                ExtractorId = aExtractorId;
-                Type = aType;
-            }
         }
         #endregion Types
 
@@ -62,6 +55,7 @@ namespace Oxide.Plugins
         // Not sure what the placable prefab is called, just playing safe
         private static readonly string[] PumpJackPrefabs = { "pumpjack", "pump_jack", "pump-jack", "pumpjack-static" };
         private static readonly string[] QuarryPrefabs = { "mining_quarry", "miningquarry_static" };
+        private static readonly IEnumerable<string> CombinedPrefabs = PumpJackPrefabs.Concat(QuarryPrefabs);
         #endregion Constants
 
         #region Variables
@@ -90,7 +84,7 @@ namespace Oxide.Plugins
 
                 if (FConfigData == null)
                     LoadDefaultConfig();
-            } catch {
+            } catch (Exception) {
                 LoadDefaultConfig();
             }
 
@@ -112,10 +106,8 @@ namespace Oxide.Plugins
         {
             foreach (BaseNetworkable extractor in BaseNetworkable.serverEntities.Where(x => FPlayerExtractorList.Exists(y => x.net.ID == y.ExtractorId))) {
                 // Skip anything we don't care about and if the enine is still running
-                if (
-                    !(PumpJackPrefabs.Contains(extractor.ShortPrefabName) || QuarryPrefabs.Contains(extractor.ShortPrefabName)) ||
-                    (extractor as MiningQuarry).IsEngineOn()
-                ) continue;
+                if (!CombinedPrefabs.Contains(extractor.ShortPrefabName) || (extractor as MiningQuarry).IsEngineOn())
+                    continue;
 
                 FPlayerExtractorList.RemoveAll(x => extractor.net.ID == x.ExtractorId);
             }
@@ -146,29 +138,24 @@ namespace Oxide.Plugins
 
         void OnQuarryToggled(MiningQuarry aExtractor, BasePlayer aPlayer)
         {
-            ExtractorType type = ExtractorType.Invalid;
+            ExtractorType type;
 
             if (PumpJackPrefabs.Contains(aExtractor.ShortPrefabName)) {
                 type = ExtractorType.PumpJack;
             } else if (QuarryPrefabs.Contains(aExtractor.ShortPrefabName)) {
                 type = ExtractorType.Quarry;
-            }
-
-            // Skip anything we don't care about
-            if (type == ExtractorType.Invalid)
+            } else {
+                // Skip anything we don't care about
                 return;
-
-            bool engineState = aExtractor.IsEngineOn();
+            }
 
             // Extractor was turned off, don't care about player ID, just remove
-            if (!engineState) {
-                FPlayerExtractorList.RemoveAll(x => x.ExtractorId == aExtractor.net.ID);
+            if (!aExtractor.IsEngineOn()) {
+                FPlayerExtractorList.RemoveAll(x => aExtractor.net.ID == x.ExtractorId);
                 return;
             }
 
-            IEnumerable<QuarryState> states = FPlayerExtractorList.Where(x => aPlayer.userID == x.PlayerId);
-
-            if (states.Count(x => FConfigData.IgnoreExtractorType || type == x.Type) > 0) {
+            if (FPlayerExtractorList.Count(x => aPlayer.userID == x.PlayerId && (FConfigData.IgnoreExtractorType || type == x.Type)) > 0) {
                 // Turn engine OFF
                 aExtractor.EngineSwitch(false);
                 // Warn the player
@@ -176,7 +163,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            FPlayerExtractorList.Add(new QuarryState(aPlayer.userID, aExtractor.net.ID, type));
+            FPlayerExtractorList.Add(new QuarryState { PlayerId = aPlayer.userID, ExtractorId = aExtractor.net.ID, Type = type });
         }
         #endregion Hooks
     }
