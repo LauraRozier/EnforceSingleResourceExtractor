@@ -31,7 +31,7 @@ using System.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("EnforceSingleResourceExtractor", "ThibmoRozier", "1.0.0")]
+    [Info("EnforceSingleResourceExtractor", "ThibmoRozier", "1.0.1")]
     [Description("Enforce players only being able to use a single quarry and/or pump jack.")]
     public class EnforceSingleResourceExtractor : RustPlugin
     {
@@ -115,19 +115,10 @@ namespace Oxide.Plugins
                 if (
                     !(PumpJackPrefabs.Contains(extractor.ShortPrefabName) || QuarryPrefabs.Contains(extractor.ShortPrefabName)) ||
                     (extractor as MiningQuarry).IsEngineOn()
-                )
-                    continue;
+                ) continue;
 
                 FPlayerExtractorList.RemoveAll(x => extractor.net.ID == x.ExtractorId);
             }
-        }
-
-        private void Enforce(MiningQuarry aExtractor, BasePlayer aPlayer)
-        {
-            // Turn engine OFF
-            aExtractor.EngineSwitch(false);
-            // Warn the player
-            aPlayer.ChatMessage(lang.GetMessage("Warning Message Text", this, aPlayer.UserIDString));
         }
         #endregion Script Methods
 
@@ -178,7 +169,10 @@ namespace Oxide.Plugins
             IEnumerable<QuarryState> states = FPlayerExtractorList.Where(x => aPlayer.userID == x.PlayerId);
 
             if (states.Count(x => FConfigData.IgnoreExtractorType || type == x.Type) > 0) {
-                Enforce(aExtractor, aPlayer);
+                // Turn engine OFF
+                aExtractor.EngineSwitch(false);
+                // Warn the player
+                aPlayer.ChatMessage(lang.GetMessage("Warning Message Text", this, aPlayer.UserIDString));
                 return;
             }
 
