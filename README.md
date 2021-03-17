@@ -1,4 +1,7 @@
 *Enforce Single Resource Extractor* enforces players only being able to use a single quarry and/or pump jack.
+
+Plugin is written based on a suggestion by [Majaspokla](https://umod.org/user/Majaspokla)
+
 ## Features
 
 
