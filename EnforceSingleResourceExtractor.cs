@@ -32,7 +32,7 @@ using System.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("EnforceSingleResourceExtractor", "ThibmoRozier", "1.0.2")]
+    [Info("EnforceSingleResourceExtractor", "ThibmoRozier", "1.0.3")]
     [Description("Enforce players only being able to use a single quarry and/or pump jack.")]
     public class EnforceSingleResourceExtractor : RustPlugin
     {
@@ -104,13 +104,23 @@ namespace Oxide.Plugins
         #region Script Methods
         private void CheckExtractorIsOff()
         {
-            foreach (BaseNetworkable extractor in BaseNetworkable.serverEntities.Where(x => FPlayerExtractorList.Exists(y => x.net.ID == y.ExtractorId))) {
-                // Skip anything we don't care about and if the enine is still running
-                if (!CombinedPrefabs.Contains(extractor.ShortPrefabName) || (extractor as MiningQuarry).IsEngineOn())
-                    continue;
+            List<uint> removeIds = new List<uint>();
+            BaseNetworkable extractor;
 
-                FPlayerExtractorList.RemoveAll(x => extractor.net.ID == x.ExtractorId);
+            foreach (var item in FPlayerExtractorList) {
+                try {
+                    // Check the prefab name, just to be sure, since we use the net.ID which could be reused after the entity is killed.
+                    extractor = BaseNetworkable.serverEntities.First(x => x.net.ID == item.ExtractorId && CombinedPrefabs.Contains(x.ShortPrefabName));
+
+                    if ((extractor as MiningQuarry).IsEngineOn())
+                        continue;
+                } catch(ArgumentNullException) { }
+
+                removeIds.Add(item.ExtractorId);
             }
+
+            if (removeIds.Count > 0)
+                FPlayerExtractorList.RemoveAll(x => removeIds.Contains(x.ExtractorId));
         }
         #endregion Script Methods
 
@@ -164,6 +174,12 @@ namespace Oxide.Plugins
             }
 
             FPlayerExtractorList.Add(new QuarryState { PlayerId = aPlayer.userID, ExtractorId = aExtractor.net.ID, Type = type });
+        }
+
+        void OnEntityKill(BaseNetworkable entity)
+        {
+            if (CombinedPrefabs.Contains(entity.ShortPrefabName))
+                FPlayerExtractorList.RemoveAll(x => entity.net.ID == x.ExtractorId);
         }
         #endregion Hooks
     }
