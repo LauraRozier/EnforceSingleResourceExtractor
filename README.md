@@ -2,18 +2,6 @@
 
 Plugin is written based on a suggestion by [Majaspokla](https://umod.org/user/Majaspokla)
 
-## Features
-
-
-## Permissions
-
-
-## Chat Commands
-
-
-## Console Commands
-
-
 ## Configuration
 
 - **Ignore Extractor Type** -- When set to `false` players will be able to run one Mining Quarry AND one Pump Jack at the same time
