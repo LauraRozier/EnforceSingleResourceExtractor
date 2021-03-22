@@ -32,7 +32,7 @@ using System.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("EnforceSingleResourceExtractor", "ThibmoRozier", "1.0.3")]
+    [Info("Enforce Single Resource Extractor", "ThibmoRozier", "1.0.4")]
     [Description("Enforce players only being able to use a single quarry and/or pump jack.")]
     public class EnforceSingleResourceExtractor : RustPlugin
     {
@@ -125,7 +125,7 @@ namespace Oxide.Plugins
         #endregion Script Methods
 
         #region Hooks
-        void Loaded()
+        void OnServerInitialized()
         { 
             LoadConfig();
             FCleanupTimer = timer.Every(1f, CheckExtractorIsOff);
