@@ -53,9 +53,9 @@ namespace Oxide.Plugins
 
         #region Constants
         // Not sure what the placable prefab is called, just playing safe
-        private static readonly string[] PumpJackPrefabs = { "pumpjack", "pump_jack", "pump-jack", "pumpjack-static" };
-        private static readonly string[] QuarryPrefabs = { "mining_quarry", "miningquarry_static" };
-        private static readonly IEnumerable<string> CombinedPrefabs = PumpJackPrefabs.Concat(QuarryPrefabs);
+        private static readonly string[] CPumpJackPrefabs = { "pumpjack", "pump_jack", "pump-jack", "pumpjack-static" };
+        private static readonly string[] CQuarryPrefabs = { "mining_quarry", "miningquarry_static" };
+        private static readonly IEnumerable<string> CCombinedPrefabs = CPumpJackPrefabs.Concat(CQuarryPrefabs);
         #endregion Constants
 
         #region Variables
@@ -110,7 +110,7 @@ namespace Oxide.Plugins
             foreach (var item in FPlayerExtractorList) {
                 try {
                     // Check the prefab name, just to be sure, since we use the net.ID which could be reused after the entity is killed.
-                    extractor = BaseNetworkable.serverEntities.First(x => x.net.ID == item.ExtractorId && CombinedPrefabs.Contains(x.ShortPrefabName));
+                    extractor = BaseNetworkable.serverEntities.First(x => x.net.ID == item.ExtractorId && CCombinedPrefabs.Contains(x.ShortPrefabName));
 
                     if ((extractor as MiningQuarry).IsEngineOn())
                         continue;
@@ -150,9 +150,9 @@ namespace Oxide.Plugins
         {
             ExtractorType type;
 
-            if (PumpJackPrefabs.Contains(aExtractor.ShortPrefabName)) {
+            if (CPumpJackPrefabs.Contains(aExtractor.ShortPrefabName)) {
                 type = ExtractorType.PumpJack;
-            } else if (QuarryPrefabs.Contains(aExtractor.ShortPrefabName)) {
+            } else if (CQuarryPrefabs.Contains(aExtractor.ShortPrefabName)) {
                 type = ExtractorType.Quarry;
             } else {
                 // Skip anything we don't care about
@@ -178,7 +178,7 @@ namespace Oxide.Plugins
 
         void OnEntityKill(BaseNetworkable entity)
         {
-            if (CombinedPrefabs.Contains(entity.ShortPrefabName))
+            if (CCombinedPrefabs.Contains(entity.ShortPrefabName))
                 FPlayerExtractorList.RemoveAll(x => entity.net.ID == x.ExtractorId);
         }
         #endregion Hooks
