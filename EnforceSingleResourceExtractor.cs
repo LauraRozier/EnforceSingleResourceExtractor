@@ -158,6 +158,15 @@ namespace Oxide.Plugins
 
         void OnQuarryToggled(MiningQuarry aExtractor, BasePlayer aPlayer)
         {
+            /* This check takes care of 2 simple cases:
+             *   1> The player is whitelisted, just remove
+             *   2> Extractor was turned off, don't care about player ID, just remove
+             */
+            if (permission.UserHasPermission(aPlayer.UserIDString, CPermWhitelist) || !aExtractor.IsEngineOn()) {
+                FPlayerExtractorList.RemoveAll(x => aExtractor.net.ID == x.ExtractorId);
+                return;
+            }
+
             ExtractorType type;
 
             if (CPumpJackPrefabs.Contains(aExtractor.ShortPrefabName)) {
@@ -168,16 +177,6 @@ namespace Oxide.Plugins
                 // Skip anything we don't care about
                 return;
             }
-
-            // Extractor was turned off, don't care about player ID, just remove
-            if (!aExtractor.IsEngineOn()) {
-                FPlayerExtractorList.RemoveAll(x => aExtractor.net.ID == x.ExtractorId);
-                return;
-            }
-
-            // Check whitelist permission AFTER the turn-off check, just skip when whitelisted
-            if (permission.UserHasPermission(aPlayer.UserIDString, CPermWhitelist))
-                return;
 
             if (FPlayerExtractorList.Count(x => aPlayer.userID == x.PlayerId && (FConfigData.IgnoreExtractorType || type == x.Type)) > 0) {
                 // Turn engine OFF
