@@ -32,7 +32,7 @@ using System.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("Enforce Single Resource Extractor", "ThibmoRozier", "1.0.4")]
+    [Info("Enforce Single Resource Extractor", "ThibmoRozier", "1.0.5")]
     [Description("Enforce players only being able to use a single quarry and/or pump jack.")]
     public class EnforceSingleResourceExtractor : RustPlugin
     {
@@ -56,6 +56,9 @@ namespace Oxide.Plugins
         private static readonly string[] CPumpJackPrefabs = { "pumpjack", "pump_jack", "pump-jack", "pumpjack-static" };
         private static readonly string[] CQuarryPrefabs = { "mining_quarry", "miningquarry_static" };
         private static readonly IEnumerable<string> CCombinedPrefabs = CPumpJackPrefabs.Concat(CQuarryPrefabs);
+
+        // Permissions
+        private const String CPermWhitelist = "enforcesingleresourceextractor.whitelist";
         #endregion Constants
 
         #region Variables
@@ -108,6 +111,12 @@ namespace Oxide.Plugins
             BaseNetworkable extractor;
 
             foreach (var item in FPlayerExtractorList) {
+                // Check whitelist permission, just remove entry when whitelisted
+                if (permission.UserHasPermission(item.PlayerId.ToString(), CPermWhitelist)) {
+                    removeIds.Add(item.ExtractorId);
+                    continue;
+                }
+
                 try {
                     // Check the prefab name, just to be sure, since we use the net.ID which could be reused after the entity is killed.
                     extractor = BaseNetworkable.serverEntities.First(x => x.net.ID == item.ExtractorId && CCombinedPrefabs.Contains(x.ShortPrefabName));
@@ -128,6 +137,7 @@ namespace Oxide.Plugins
         void OnServerInitialized()
         { 
             LoadConfig();
+            permission.RegisterPermission(CPermWhitelist, this);
             FCleanupTimer = timer.Every(1f, CheckExtractorIsOff);
         }
 
@@ -164,6 +174,10 @@ namespace Oxide.Plugins
                 FPlayerExtractorList.RemoveAll(x => aExtractor.net.ID == x.ExtractorId);
                 return;
             }
+
+            // Check whitelist permission AFTER the turn-off check, just skip when whitelisted
+            if (permission.UserHasPermission(aPlayer.UserIDString, CPermWhitelist))
+                return;
 
             if (FPlayerExtractorList.Count(x => aPlayer.userID == x.PlayerId && (FConfigData.IgnoreExtractorType || type == x.Type)) > 0) {
                 // Turn engine OFF

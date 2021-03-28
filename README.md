@@ -2,6 +2,10 @@
 
 Plugin is written based on a suggestion by [Majaspokla](https://umod.org/user/Majaspokla)
 
+## Permissions
+
+- **enforcesingleresourceextractor.whitelist** -- Players/Groups with this permission are whitelisted and will not be enforced by this plugin.
+
 ## Configuration
 
 - **Ignore Extractor Type** -- When set to `false` players will be able to run one Mining Quarry AND one Pump Jack at the same time
